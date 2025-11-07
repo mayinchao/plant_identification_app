@@ -1,0 +1,58 @@
+name: Build Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:    # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Debug - Check directory structure
+      run: |
+        echo "Root directory:"
+        ls -la
+        echo "Frontend directory:"
+        ls -la Frontend/
+        echo "Requirements file content:"
+        cat Frontend/requirements.txt || echo "No requirements.txt found"
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '11'
+        
+    - name: Install dependencies
+      run: |
+        cd Frontend
+        pip install flet
+        pip install aiohttp Pillow
+        if [ -f "requirements.txt" ]; then
+          pip install -r requirements.txt
+        fi
+        
+    - name: Build APK
+      run: |
+        cd Frontend
+        flet build apk
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: plant-identification-apk
+        path: Frontend/build/apk/app-release.apk
+        retention-days: 30
